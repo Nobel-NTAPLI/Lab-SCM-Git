@@ -3,6 +3,8 @@ import json
 import ipaddress
 import sys
 
+from parse_ips import parse_ips
+from smallest_subnet import smallest_subnet
 
 def download_aws_ip_set():
     """Downloads the AWS IP range JSON file and returns it as a dictionary."""
@@ -48,17 +50,55 @@ def feature_min_max(prefix):
 
 
 
+
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print("Utilisation : python3 awsip.py <adresse_ip>")
-        sys.exit(1)
 
-    ip_to_find = sys.argv[1]
+    # MODE 1 : Calcul du plus petit sous-reseau
+    if len(sys.argv) >= 2 and sys.argv[1] == "--subnet":
 
-    aws_ranges = download_aws_ip_set()
-    results = find_aws_ip(aws_ranges, ip_to_find)
+        try:
+            # Recuperation et validation des adresses IP
+            ips = parse_ips(sys.argv[2:])
 
-    for prefix in results:
-        prefix.update(feature_min_max(prefix))
+            # Calcul du plus petit sous-reseau
+            network = smallest_subnet(ips)
 
-    print(json.dumps(results, indent=2))
+            # Affichage des resultats
+            print("\nAdresses IP fournies :")
+            for ip in ips:
+                print(ip)
+
+            print("\nPlus petit sous-reseau :")
+            print(network)
+
+            print("Premiere IP :", network.network_address)
+            print("Derniere IP :", network.broadcast_address)
+
+        except ValueError as error:
+            print("Erreur :", error)
+            sys.exit(1)
+
+    # MODE 2 : Recherche d'une IP dans les plages AWS
+    else:
+
+        if len(sys.argv) != 2:
+            print("Utilisation :")
+            print("  python3 awsip.py <adresse_ip>")
+            print("  python3 awsip.py --subnet <ip1> <ip2> ...")
+            sys.exit(1)
+
+        ip_to_find = sys.argv[1]
+
+        try:
+            aws_ranges = download_aws_ip_set()
+            results = find_aws_ip(aws_ranges, ip_to_find)
+
+            for prefix in results:
+                prefix.update(feature_min_max(prefix))
+
+            print(json.dumps(results, indent=2))
+
+        except ValueError as error:
+            print("Erreur :", error)
+            sys.exit(1)
+
