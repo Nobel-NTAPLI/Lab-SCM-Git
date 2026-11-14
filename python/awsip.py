@@ -30,9 +30,35 @@ def find_aws_ip(aws_ip_range_data, ip_to_find):
     return results
 
 
-if __name__ == '__main__':
+def feature_min_max(prefix):
+    """
+    Retourne la première et la dernière adresse IP
+    d'une plage réseau AWS.
+    """
+    network = ipaddress.ip_network(prefix['ip_prefix'])
+
+    first_ip = network.network_address
+    last_ip = network.broadcast_address
+
+    return {
+        "first_ip": str(first_ip),
+        "last_ip": str(last_ip)
+    }
+
+
+
+
+if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print("Usage: python awsip.py <IP_ADDRESS>")
+        print("Utilisation : python3 awsip.py <adresse_ip>")
         sys.exit(1)
 
-    sys.stdout.write(json.dumps(find_aws_ip(download_aws_ip_set(), sys.argv[1]), indent=2))
+    ip_to_find = sys.argv[1]
+
+    aws_ranges = download_aws_ip_set()
+    results = find_aws_ip(aws_ranges, ip_to_find)
+
+    for prefix in results:
+        prefix.update(feature_min_max(prefix))
+
+    print(json.dumps(results, indent=2))
